@@ -76,34 +76,79 @@ userSchema.statics.authenticate = (userObj, cb) => {
             if (err || !success) return cb(err || {
                 error: 'Authentication Failed. Invalid email or password.'
             })
-
+            console.log('dbUser: ', dbUser);
             var token = dbUser.generateToken();
             cb(null, token);
-
         });
-
-
-
-
     });
 };
 
+userSchema.statics.auth = (role) => {
+    return (req, res, next) => {
 
-userSchema.methods.generateToken = () => {
+        var token = req.cookies.accessToken;
+        console.log('token: ', token);
+        jwt.verify(token, JWT_SECRET, (err, payload) => {
+            console.log('payload: ', payload);
+            if (err) return res.status(401).send({
+                errer: 'Authentication failed.'
+            });
+
+            var userId = payload._id;
+            User.findById(userId, (err, user) => {
+                if (err || !user) return res.status(401).send({
+                    error: 'User not found'
+                })
+                req.loggedinUser = user;
+                    if (role==='admin' && !req.loggedinUser.admin) {
+                        // if the role is admin and but has admin as false
+                        res.status(403).send({error: 'you are fake admin.'});
+                    }
+                    // for normal or admin user to go
+                    next()
+            }).select('-password');
+        });
+    }
+}
+
+// userSchema.statics.isLoggedIn = (req, res, next) => {
+//     var token = req.cookies.accessToken;
+//     console.log('token: ', token);
+//     jwt.verify(token, JWT_SECRET, (err, payload) => {
+//         console.log('payload: ', payload);
+//         if (err) return res.status(401).send({
+//             errer: 'Authentication failed.'
+//         });
+//
+//         var userId = payload._id;
+//         User.findById(userId, (err, user) => {
+//             if (err || !user) return res.status(401).send({
+//                 error: 'User not found'
+//             })
+//             req.loggedinUser = user;
+//             next();
+//         }).select('-password');
+//     });
+// };
+// userSchema.statics.isAdmin = (req, res, next) => {
+//     if (req.loggedinUser.admin) {
+//         next()
+//     } else {
+//         res.status(403).send({
+//             error: 'Not authrized.'
+//         });
+//     }
+// };
+
+userSchema.methods.generateToken = function() {
+    console.log('this: ', this);
+    console.log('id: ', this._id);
     var payload = {
         _id: this._id,
         exp: moment().add(1, 'day').unix()
     };
-
     return jwt.sign(payload, JWT_SECRET);
-
 }
-
-
-
-
-
-
 
 
 

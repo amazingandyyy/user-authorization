@@ -18,11 +18,11 @@ router.post('/authenticate', (req, res) => {
         if (err) {
             res.status(400).send(err);
         } else {
-            res.cookie('accessToken: ', token).send();
+            res.cookie('accessToken', token).send(token);
         }
     })
 })
-router.post('/logout', (req, res) => {
+router.delete('/logout', (req, res) => {
     res.clearCookie('accessToken').send();
 });
 
